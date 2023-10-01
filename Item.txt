@@ -1,0 +1,589 @@
+from tkinter import *
+from tkinter import ttk, messagebox
+import mysql.connector
+
+class itemClass:
+    def __init__(self, root):
+        self.root = root
+        self.root.geometry("1330x650+200+130")
+        self.root.title("INVENTORY MANAGEMENT SYSTEM")
+        self.root.config(bg="white")
+        self.root.focus_force()
+        #================================================
+        # All variables===
+        self.var_searchby = StringVar()
+        self.var_searchtxt = StringVar()
+
+        self.var_bill_no = StringVar()
+        self.var_product_name = StringVar()
+        self.var_rate = StringVar()
+        self.var_qty = StringVar()
+        self.var_brand = StringVar()
+        self.var_gross = StringVar()
+        self.var_dis = StringVar()
+        self.var_tax = StringVar()
+        self.var_hsn = StringVar()
+        self.var_unit = StringVar()
+        self.var_cgst = StringVar()
+        self.var_cgst_amt = StringVar()
+        self.var_sgst = StringVar()
+        self.var_sgst_amt = StringVar()
+        self.var_igst = StringVar()
+        self.var_igst_amt = StringVar()
+        self.var_total_amt = StringVar()
+        self.var_mrp = StringVar()
+        self.var_sale_rate = StringVar()
+        self.product_list = []
+        
+        
+        # Initialize taxable_amount as a class-level variable
+        self.taxable_amount = 0.0
+        
+       
+       
+       
+
+
+        #===searchFrame===
+        SearchFrame = LabelFrame(self.root, text="Purchase Item", font=("goudy old style", 12, "bold"), bd=2,relief=RIDGE, bg="white")
+        SearchFrame.place(x=80, y=10, width=1150, height=350)
+
+        #===content===
+        #===row1===
+        lbl_bill_no = Label(self.root, text="Bill No", font=("goudy old style", 15), bg="white")
+        lbl_bill_no.place(x=100, y=30)
+        lbl_product_name = Label(self.root, text="Product Name", font=("goudy old style", 15), bg="white")
+        lbl_product_name.place(x=800, y=30)
+
+        txt_bill_no = Entry(self.root, textvariable=self.var_bill_no, font=("goudy old style", 15), bg="lightyellow")
+        txt_bill_no.place(x=250, y=30, width=200)
+         
+        self.fetch_product()    
+        cmb_product_name = ttk.Combobox(self.root, textvariable=self.var_product_name,values=self.product_list, state='readonly', justify=CENTER,font=("goudy old style", 15))
+        cmb_product_name.place(x=950, y=30, width=200)
+        cmb_product_name.bind("<<ComboboxSelected>>", self.on_hsn_entered)
+
+        #==row2===
+        lbl_brand = Label(self.root, text="Brand", font=("goudy old style", 15), bg="white")
+        lbl_brand.place(x=100, y=90)
+        txt_brand = Entry(self.root, textvariable=self.var_brand, font=("goudy old style", 15), bg="lightyellow")
+        txt_brand.place(x=250, y=90, width=200)
+        txt_brand.bind("<<ComboboxSelected>>", self.on_sale_rate_entered)
+        
+        lbl_unit = Label(self.root, text="Unit", font=("goudy old style", 15), bg="white")
+        lbl_unit.place(x=800, y=150)
+        txt_unit = Entry(self.root, textvariable=self.var_unit, font=("goudy old style", 15), bg="lightyellow")
+        txt_unit.place(x=950, y=150, width=200)
+
+        
+        
+        #==row2===
+        lbl_rate = Label(self.root, text="Purchase Rate", font=("goudy old style", 15), bg="white")
+        lbl_rate.place(x=100, y=60)
+        lbl_qty = Label(self.root, text="Quantity", font=("goudy old style", 15), bg="white")
+        lbl_qty.place(x=800, y=60)
+
+        txt_rate = Entry(self.root, textvariable=self.var_rate, font=("goudy old style", 15), bg="lightyellow")
+        txt_rate.place(x=250, y=60, width=200)
+        txt_rate.bind("<KeyRelease>", self.calculate_gross) 
+        txt_qty = Entry(self.root, textvariable=self.var_qty, font=("goudy old style", 15), bg="lightyellow")
+        txt_qty.place(x=950, y=60, width=200)
+        txt_qty.bind("<KeyRelease>", self.calculate_gross)  
+
+
+        #==row3===
+        lbl_brand = Label(self.root, text="Brand", font=("goudy old style", 15), bg="white")
+        lbl_brand.place(x=100, y=90)
+        lbl_gross = Label(self.root, text="Gross", font=("goudy old style", 15), bg="white")
+        lbl_gross.place(x=800, y=90)
+
+        
+        txt_gross = Entry(self.root, textvariable=self.var_gross, font=("goudy old style", 15), bg="lightyellow")
+        txt_gross.place(x=950, y=90, width=200)
+        
+        #==row4====
+        lbl_dis = Label(self.root, text="Discount", font=("goudy old style", 15), bg="white")
+        lbl_dis.place(x=100, y=120)
+        lbl_tax = Label(self.root, text="Taxable Amount", font=("goudy old style", 15), bg="white")
+        lbl_tax.place(x=800, y=120)
+
+        txt_dis = Entry(self.root, textvariable=self.var_dis, font=("goudy old style", 15), bg="lightyellow")
+        txt_dis.place(x=250, y=120, width=200)
+        txt_dis.bind("<KeyRelease>", self.on_taxable_amount)
+    
+        txt_tax = Entry(self.root, textvariable=self.var_tax, font=("goudy old style", 15), bg="lightyellow")
+        txt_tax.place(x=950, y=120, width=200)
+          
+
+
+        #==row5===
+        lbl_hsn = Label(self.root, text="HSN", font=("goudy old style", 15), bg="white")
+        lbl_hsn.place(x=100, y=150)
+        lbl_unit = Label(self.root, text="Unit", font=("goudy old style", 15), bg="white")
+        lbl_unit.place(x=800, y=150)
+
+        self.fetch_hsn_details()
+        txt_hsn = Entry(self.root, textvariable=self.var_hsn,font=("goudy old style", 15),bg="lightyellow")
+        txt_hsn.place(x=250, y=150, width=200) 
+        
+        txt_unit = Entry(self.root, textvariable=self.var_unit, font=("goudy old style", 15), bg="lightyellow")
+        txt_unit.place(x=950, y=150, width=200)
+
+        #==row6===
+        lbl_cgst = Label(self.root, text="CGST %", font=("goudy old style", 15), bg="white")
+        lbl_cgst.place(x=100, y=180)
+        lbl_cgst_amt = Label(self.root, text="CGST Amount", font=("goudy old style", 15), bg="white")
+        lbl_cgst_amt.place(x=800, y=180)
+
+        txt_cgst = Entry(self.root, textvariable=self.var_cgst, font=("goudy old style", 15), bg="lightyellow")
+        txt_cgst.place(x=250, y=180, width=200)
+        
+        txt_cgst_amt = Entry(self.root, textvariable=self.var_cgst_amt, font=("goudy old style", 15),bg="lightyellow")
+        txt_cgst_amt.place(x=950, y=180, width=200)
+
+        #==row7===
+        lbl_sgst = Label(self.root, text="SGST %", font=("goudy old style", 15), bg="white")
+        lbl_sgst.place(x=100, y=210)
+        lbl_sgst_amt = Label(self.root, text="SGST Amount", font=("goudy old style", 15), bg="white")
+        lbl_sgst_amt.place(x=800, y=210)
+
+        txt_sgst = Entry(self.root, textvariable=self.var_sgst, font=("goudy old style", 15), bg="lightyellow")
+        txt_sgst.place(x=250, y=210, width=200)
+        
+        txt_sgst_amt = Entry(self.root, textvariable=self.var_sgst_amt, font=("goudy old style", 15), bg="lightyellow")
+        txt_sgst_amt.place(x=950, y=210, width=200)
+
+        #===row8===
+        lbl_igst = Label(self.root, text="IGST %", font=("goudy old style", 15), bg="white")
+        lbl_igst.place(x=100, y=240)
+        lbl_igst_amt = Label(self.root, text="IGST Amount", font=("goudy old style", 15), bg="white")
+        lbl_igst_amt.place(x=800, y=240)
+
+        txt_igst = Entry(self.root, textvariable=self.var_igst, font=("goudy old style", 15), bg="lightyellow")
+        txt_igst.place(x=250, y=240, width=200)
+        
+        txt_igst_amt = Entry(self.root, textvariable=self.var_igst_amt, font=("goudy old style", 15),bg="lightyellow")
+        txt_igst_amt.place(x=950, y=240, width=200)
+
+        #===row9===
+        lbl_total_amt = Label(self.root, text="Total Amount", font=("goudy old style", 15), bg="white")
+        lbl_total_amt.place(x=100, y=270)
+        lbl_mrp = Label(self.root, text="MRP", font=("goudy old style", 15), bg="white")
+        lbl_mrp.place(x=100, y=300)
+
+        txt_total_amt = Entry(self.root, textvariable=self.var_total_amt, font=("goudy old style", 15),bg="lightyellow")
+        txt_total_amt.place(x=250, y=270, width=200)
+        txt_mrp = Entry(self.root, textvariable=self.var_mrp, font=("goudy old style", 15), bg="lightyellow")
+        txt_mrp.place(x=250, y=300, width=200)
+
+        #===row10===
+        lbl_sale_rate = Label(self.root, text="Sales Rate", font=("goudy old style", 15), bg="white")
+        lbl_sale_rate.place(x=800, y=270)
+        txt_sale_rate = Entry(self.root, textvariable=self.var_sale_rate, font=("goudy old style", 15),bg="lightyellow")
+        txt_sale_rate.place(x=950, y=270, width=200)
+
+        #===Button Frame===
+        but_Frame = LabelFrame(self.root, text="Operation", font=("goudy old style", 12, "bold"), bd=2,relief=RIDGE, bg="white")
+        but_Frame.place(x=105, y=360, width=1100, height=80)
+
+        #===buttons===
+        btn_save=Button(self.root,text="Save",command=self.save,font=("goudy old style",15,"bold"),bg="#2196f3",fg="white",cursor="hand2").place(x=300,y=390,width=110,height=28)
+        btn_update=Button(self.root,text="Update",command=self.update,font=("goudy old style",15,"bold"),bg="#4caf50",fg="white",cursor="hand2").place(x=500,y=390,width=110,height=28)
+        btn_delete=Button(self.root,text="Delete",command=self.delete,font=("goudy old style",15,"bold"),bg="#f44336",fg="white",cursor="hand2").place(x=700,y=390,width=110,height=28)
+        btn_clear=Button(self.root,text="Clear",command=self.clear,font=("goudy old style",15,"bold"),bg="#607d8b",fg="white",cursor="hand2").place(x=900,y=390,width=110,height=28)
+        
+        #===item Details===
+        emp_frame = Frame(self.root, bd=3, relief=RIDGE)
+        emp_frame.place(x=0, y=450, relwidth=1, height=200)
+
+        scrolly = Scrollbar(emp_frame, orient=VERTICAL)
+        scrollx = Scrollbar(emp_frame, orient=HORIZONTAL)
+
+        self.itemTable = ttk.Treeview(emp_frame,
+                                      columns=("bill_no", "product_name", "rate", "qty", "brand", "gross", "dis", "tax", "hsn",
+                                               "unit", "cgst", "cgst_amt", "sgst", "sgst_amt", "igst", "igst_amt",
+                                               "total_amt", "mrp", "sale_rate"),
+                                      yscrollcommand=scrolly.set, xscrollcommand=scrollx.set)
+        scrollx.pack(side=BOTTOM, fill=X)
+        scrolly.pack(side=RIGHT, fill=Y)
+        scrollx.config(command=self.itemTable.xview)
+        scrolly.config(command=self.itemTable.yview)
+
+        self.itemTable.heading("bill_no", text="Bill No")
+        self.itemTable.heading("product_name", text="Product Name")
+        self.itemTable.heading("rate", text="Purchase Rate")
+        self.itemTable.heading("qty", text="Quantity")
+        self.itemTable.heading("brand", text="Brand")
+        self.itemTable.heading("gross", text="Gross Amount")
+        self.itemTable.heading("dis", text="Discount")
+        self.itemTable.heading("tax", text="Taxable Amount")
+        self.itemTable.heading("hsn", text="HSN Code")
+        self.itemTable.heading("unit", text="Unit")
+        self.itemTable.heading("cgst", text="CGST %")
+        self.itemTable.heading("cgst_amt", text="CGST Amount")
+        self.itemTable.heading("sgst", text="SGST %")
+        self.itemTable.heading("sgst_amt", text="SGST Amount")
+        self.itemTable.heading("igst", text="IGST %")
+        self.itemTable.heading("igst_amt", text="IGST Amount")
+        self.itemTable.heading("total_amt", text="Total Amount")
+        self.itemTable.heading("mrp", text="MRP")
+        self.itemTable.heading("sale_rate", text="Sales Rate")
+
+        self.itemTable["show"] = "headings"
+
+        self.itemTable.column("bill_no", width=90)
+        self.itemTable.column("product_name", width=100)
+        self.itemTable.column("rate", width=100)
+        self.itemTable.column("qty", width=100)
+        self.itemTable.column("brand", width=100)
+        self.itemTable.column("gross", width=100)
+        self.itemTable.column("dis", width=100)
+        self.itemTable.column("tax", width=100)
+        self.itemTable.column("hsn", width=100)
+        self.itemTable.column("unit", width=100)
+        self.itemTable.column("cgst", width=100)
+        self.itemTable.column("cgst_amt", width=90)
+        self.itemTable.column("sgst", width=100)
+        self.itemTable.column("sgst_amt", width=100)
+        self.itemTable.column("igst", width=100)
+        self.itemTable.column("igst_amt", width=100)
+        self.itemTable.column("total_amt", width=100)
+        self.itemTable.column("mrp", width=100)
+        self.itemTable.column("sale_rate", width=100)
+
+        self.itemTable.pack(fill=BOTH, expand=1)
+        self.itemTable.bind("<ButtonRelease-1>", self.get_data)
+
+        self.show()
+        
+        
+
+
+    #==================================================================================================
+    def fetch_product(self):
+        self.product_list.append("Empty")
+        con = mysql.connector.connect(host='localhost', user='root', password='Abhi6379@', database='ims')
+        cur = con.cursor()
+        try:
+            cur.execute("SELECT DISTINCT name FROM product")
+            cats = cur.fetchall()
+            if len(cats) > 0:
+                self.product_list.clear()
+                self.product_list.append("Select")
+                for product in cats:
+                    self.product_list.append(product[0])
+                    
+        except Exception as ex:
+            messagebox.showerror("Error", f"Error occurred: {str(ex)}", parent=self.root)
+            
+    def on_product_selected(self, event):
+        selected_product = self.var_product_name.get()
+
+        if selected_product == "Empty":
+            self.var_hsn.set("")
+            return
+
+        con = mysql.connector.connect(host='localhost', user='root', password='Abhi6379@', database='ims')
+        cur = con.cursor()
+        try:
+            cur.execute("SELECT hsn FROM product WHERE name=%s", (selected_product,))
+            product_info = cur.fetchone()
+  
+            if product_info:
+                hsn = product_info[0]
+                self.var_hsn.set(hsn)
+            else:
+                self.var_hsn.set("")
+        except Exception as ex:
+            messagebox.showerror("Error", f"Error occurred: {str(ex)}", parent=self.root)
+        finally:
+            con.close()
+    
+    def fetch_hsn_details(self):
+        con = mysql.connector.connect(host='localhost', user='root', password='Abhi6379@', database='ims')
+        cur = con.cursor()
+        try:
+            cur.execute("SELECT cgst, sgst, igst FROM hsn WHERE hsn_code=%s", (self.var_hsn.get(),))
+            hsn_details = cur.fetchone()
+            if hsn_details:
+                cgst, sgst, igst = hsn_details
+                self.var_cgst.set(cgst)
+                self.var_sgst.set(sgst)
+                self.var_igst.set(igst)
+            else:
+                self.var_cgst.set("")
+                self.var_sgst.set("")
+                self.var_igst.set("")
+        except Exception as ex:
+            messagebox.showerror("Error", f"Error occurred: {str(ex)}", parent=self.root)
+        finally:
+            con.close()
+
+
+    def on_hsn_entered(self, event):
+        self.on_product_selected(event)
+        self.fetch_hsn_details()
+        self.calculate_cgst(event)
+        self.calculate_sgst(event)
+        self.calculate_igst(event)  
+        
+    def on_sale_rate_entered(self, event):
+       
+        self.fetch_sale_rate()
+        self.calculate_gross(event)
+        
+    def on_taxable_amount(self,event):
+        self.calculate_cgst(event)
+        self.calculate_sgst(event)
+        self.calculate_igst(event)
+        self.calculate_tax(event)   
+
+    
+    def save(self):
+        con = mysql.connector.connect(host='localhost', user='root', password='Abhi6379@', database='ims')
+        cur = con.cursor()
+        try:
+            if self.var_bill_no.get() == "":
+                messagebox.showerror("Error", "Bill No must be required", parent=self.root)
+            else:
+                cur.execute("SELECT * FROM item WHERE bill_no=%s", (self.var_bill_no.get(),))
+                row = cur.fetchone()
+                if row is not None:
+                    messagebox.showerror("Error", "This Bill No already exists, try a different ID", parent=self.root)
+                else:
+                    cur.execute("INSERT INTO item (bill_no, product_name, rate, qty, brand, gross, dis, tax, hsn, unit, cgst, cgst_amt, sgst, sgst_amt, igst, igst_amt, total_amt, mrp, sale_rate) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                        (
+                            self.var_bill_no.get(),
+                            self.var_product_name.get(),
+                            self.var_rate.get(),
+                            self.var_qty.get(),
+                            self.var_brand.get(),
+                            self.var_gross.get(),
+                            self.var_dis.get(),
+                            self.var_tax.get(),
+                            self.var_hsn.get(),
+                            self.var_unit.get(),
+                            self.var_cgst.get(),
+                            self.var_cgst_amt.get(),
+                            self.var_sgst.get(),
+                            self.var_sgst_amt.get(),
+                            self.var_igst.get(),
+                            self.var_igst_amt.get(),
+                            self.var_total_amt.get(),
+                            self.var_mrp.get(),
+                            self.var_sale_rate.get(),
+                        ))
+                    con.commit()
+                    messagebox.showinfo("Success", "Item added successfully", parent=self.root)
+        except Exception as ex:
+            messagebox.showerror("Error", f"Error occurred: {str(ex)}", parent=self.root)
+        self.show()
+        
+        
+    def show(self):
+        con = mysql.connector.connect(host='localhost', user='root', password='Abhi6379@', database='ims')
+        cur = con.cursor()
+        try:
+            cur.execute("Select*from item")
+            rows = cur.fetchall()
+            self.itemTable.delete(*self.itemTable.get_children())
+            for row in rows:
+                self.itemTable.insert('', END, values=row)
+
+        except Exception as ex:
+            messagebox.showerror("ERROR", f"Error due to :{str(ex)}", parent=self.root)
+
+    def get_data(self, ev):
+        f = self.itemTable.focus()
+        content = (self.itemTable.item(f))
+        row = content['values']
+        #print(row)
+        self.var_bill_no.set(row[0])
+        self.var_product_name.set(row[1])
+        self.var_rate.set(row[2])
+        self.var_qty.set(row[3])
+        self.var_brand.set(row[4])
+        self.var_gross.set(row[5])
+        self.var_dis.set(row[6])
+        self.var_tax.set(row[7])
+        self.var_hsn.set(row[8])
+        self.var_unit.set(row[9])
+        self.var_cgst.set(row[10])
+        self.var_cgst_amt.set(row[11])
+        self.var_sgst.set(row[12])
+        self.var_sgst_amt.set(row[13])
+        self.var_igst.set(row[14])
+        self.var_igst_amt.set(row[15])
+        self.var_total_amt.set(row[16])
+        self.var_mrp.set(row[17])
+        self.var_sale_rate.set(row[18])
+
+    def update(self):
+        con = mysql.connector.connect(host='localhost', user='root', password='Abhi6379@', database='ims')
+        cur = con.cursor()
+        try:
+            if self.var_bill_no.get() == "":
+                messagebox.showerror("Error", "Bill No must be required", parent=self.root)
+            else:
+                cur.execute("Select*from item where bill_no=%s", (self.var_bill_no.get(),))
+                row = cur.fetchone()
+                if row == None:
+                    messagebox.showerror("Error", "Invalid Bill No", parent=self.root)
+                else:
+                    cur.execute(
+                        "Update item set product_name=%s,rate=%s,qty=%s,brand=%s,gross=%s,dis=%s,tax=%s,hsn=%s,unit=%s ,cgst=%s,cgst_amt=%s,sgst=%s,sgst_amt=%s,igst=%s,igst_amt=%s,total_amt=%s,mrp=%s,sale_rate=%s where bill_no=%s",
+                        (
+                            
+                            self.var_product_name.get(),
+                            self.var_rate.get(),
+                            self.var_qty.get(),
+                            self.var_brand.get(),
+                            self.var_gross.get(),
+                            self.var_dis.get(),
+                            self.var_tax.get(),
+                            self.var_hsn.get(),
+                            self.var_unit.get(),
+                            self.var_cgst.get(),
+                            self.var_cgst_amt.get(),
+                            self.var_sgst.get(),
+                            self.var_sgst_amt.get(),
+                            self.var_igst.get(),
+                            self.var_igst_amt.get(),
+                            self.var_total_amt.get(),
+                            self.var_mrp.get(),
+                            self.var_sale_rate.get(),
+                            self.var_bill_no.get(),
+                        ))
+                    con.commit()
+                    messagebox.showinfo("Success", "Item Updated Successfully", parent=self.root)
+
+        except Exception as ex:
+            messagebox.showerror("Error", f"Error due to:{str(ex)}", parent=self.root)
+
+    def delete(self):
+        con = mysql.connector.connect(host='localhost', user='root', password='Abhi6379@', database='ims')
+        cur = con.cursor()
+        try:
+            if self.var_bill_no.get() == "":
+                messagebox.showerror("Error", "Bill No must be required", parent=self.root)
+            else:
+                cur.execute("Select*from item where bill_no=%s", (self.var_bill_no.get(),))
+                row = cur.fetchone()
+                if row == None:
+                    messagebox.showerror("Error", "Invalid Bill No", parent=self.root)
+                else:
+                    op = messagebox.askyesno("Confirm", "Do you really want to delete?", parent=self.root)
+                    if op == True:
+                        cur.execute("Delete from item where bill_no=%s", (self.var_bill_no.get(),))
+                        con.commit()
+                        messagebox.showinfo("Delete", "Item Deleted Successfully", parent=self.root)
+
+        except Exception as ex:
+            messagebox.showerror("Error", f"Error due to:{str(ex)}", parent=self.root)
+        self.show()
+            
+    def clear(self):
+        self.var_bill_no.set(""),
+        self.var_product_name.set(""),
+        self.var_rate.set(""),
+        self.var_qty.set(""),
+        self.var_brand.set(""),
+        self.var_gross.set(""),
+        self.var_dis.set(""),
+        self.var_tax.set(""),
+        self.var_hsn.set(""),
+        self.var_unit.set(""),
+        self.var_cgst.set(""),
+        self.var_cgst_amt.set(""),
+        self.var_sgst.set(""),
+        self.var_sgst_amt.set(""),
+        self.var_igst.set(""),
+        self.var_igst_amt.set(""),
+        self.var_total_amt.set(""),
+        self.var_mrp.set(""),
+        self.var_sale_rate.set(""),
+        
+        
+        self.show()
+  
+ #===========================================================================        
+        
+    def calculate_gross(self, event):
+        try:
+            rate = float(self.var_rate.get())
+            qty = float(self.var_qty.get())
+            gross = rate * qty
+            self.var_gross.set(f"{gross:.2f}")
+           
+        except ValueError:
+            self.var_gross.set("0.00")
+ #================================================================================           
+            
+    def calculate_tax(self, event):
+        try:
+            gross = float(self.var_gross.get())
+            discount = float(self.var_dis.get())
+            taxable_amount = gross - discount
+            self.var_tax.set(f"{taxable_amount:.2f}")
+            self.calculate_total_amount()
+            
+        except ValueError:
+            self.var_tax.set("0.00")
+  #=============================================================================================
+   
+    def calculate_cgst(self, event):
+        try:
+            cgst_percent = float(self.var_cgst.get())
+            taxable_amount = float(self.var_tax.get())
+            cgst_amt = taxable_amount * cgst_percent / 100
+            self.var_cgst_amt.set(f"{cgst_amt:.2f}")
+            self.calculate_total_amount()
+        except ValueError:
+            self.var_cgst_amt.set("0.00")
+            self.calculate_total_amount()
+
+    def calculate_sgst(self, event):
+        try:
+            sgst_percent = float(self.var_sgst.get())
+            taxable_amount = float(self.var_tax.get())
+            sgst_amt = taxable_amount * sgst_percent / 100
+            self.var_sgst_amt.set(f"{sgst_amt:.2f}")
+            self.calculate_total_amount()
+        except ValueError:
+            self.var_sgst_amt.set("0.00")
+            self.calculate_total_amount()
+
+    def calculate_igst(self, event):
+        try:
+            igst_percent = float(self.var_igst.get())
+            taxable_amount = float(self.var_tax.get())
+            igst_amt = taxable_amount * igst_percent / 100
+            self.var_igst_amt.set(f"{igst_amt:.2f}")
+            self.calculate_total_amount()
+        except ValueError:
+            self.var_igst_amt.set("0.00")
+            self.calculate_total_amount()
+            
+    #=================================================================================        
+    def calculate_total_amount(self):
+        try:
+            cgst_amt = float(self.var_cgst_amt.get())
+            sgst_amt = float(self.var_sgst_amt.get())
+            igst_amt = float(self.var_igst_amt.get())
+            taxable_amount = float(self.var_tax.get())
+            total_amt = taxable_amount + cgst_amt + sgst_amt + igst_amt
+            self.var_total_amt.set(f"{total_amt:.2f}")
+        except ValueError:
+            self.var_total_amt.set("0.00")       
+    
+            
+ #============================================================================================           
+        
+if __name__ == "__main__":
+    
+    root = Tk()
+    obj = itemClass(root)
+    root.mainloop()
+
+
+        

@@ -1,0 +1,257 @@
+from tkinter import *
+from tkinter import ttk
+from tkinter import messagebox
+import mysql.connector
+
+class hsnClass:
+    def __init__(self, root):
+        self.root = root
+        self.root.geometry("1330x650+200+130")
+        self.root.title("INVENTORY MANAGEMENT SYSTEM")
+        self.root.config(bg="white")
+        self.root.focus_force()
+        #===============
+        self.var_id = StringVar()
+        self.var_hsn_code = StringVar()
+        self.var_cgst = StringVar()
+        self.var_sgst = StringVar()
+        self.var_igst = StringVar()
+
+        hsn_Frame = Frame(self.root, bd=2, relief=RIDGE, bg="white")
+        hsn_Frame.place(x=70, y=10, width=450, height=540)
+        #==================
+        self.var_searchby = StringVar()
+        self.var_searchtxt = StringVar()
+        #=== Tittle=====
+        title = Label(hsn_Frame, text="Harmonized System of Nomenclature", font=("goudy old style", 18), bg="#0f4d7d", fg="white")
+        title.pack(side=TOP, fill=X)
+
+        #=== column1=================
+        self.lbl_id = Label(hsn_Frame, text="ID", font=("goudy old style", 15), bg="white")
+        self.lbl_id.place(x=30, y=60)
+        self.lbl_hsn_code = Label(hsn_Frame, text="HSN Code", font=("goudy old style", 15), bg="white")
+        self.lbl_hsn_code.place(x=30, y=110)
+        self.lbl_cgst = Label(hsn_Frame, text="CGST", font=("goudy old style", 15), bg="white")
+        self.lbl_cgst.place(x=30, y=160)
+        self.lbl_sgst = Label(hsn_Frame, text="SGST", font=("goudy old style", 15), bg="white")
+        self.lbl_sgst.place(x=30, y=210)
+        self.lbl_igst = Label(hsn_Frame, text="IGST", font=("goudy old style", 15), bg="white")
+        self.lbl_igst.place(x=30, y=260)
+    
+        txt_id = Entry(hsn_Frame, textvariable=self.var_id, font=("goudy old style", 15), bg='lightyellow')
+        txt_id.place(x=180, y=60, width=200)
+        txt_hsn_code = Entry(hsn_Frame, textvariable=self.var_hsn_code, font=("goudy old style", 15), bg='lightyellow')
+        txt_hsn_code.place(x=180, y=110, width=200)
+        txt_cgst = Entry(hsn_Frame, textvariable=self.var_cgst, font=("goudy old style", 15), bg='lightyellow')
+        txt_cgst.place(x=180, y=160, width=200)
+        txt_sgst = Entry(hsn_Frame, textvariable=self.var_sgst, font=("goudy old style", 15), bg='lightyellow')
+        txt_sgst.place(x=180, y=210, width=200)
+        txt_igst = Entry(hsn_Frame, textvariable=self.var_igst, font=("goudy old style", 15), bg='lightyellow')
+        txt_igst.place(x=180, y=260, width=200)
+
+        #====button===
+        btn_add = Button(hsn_Frame, text="Save", command=self.add, font=("goudy old style", 15, "bold"), bg="#2196f3", fg="white", cursor="hand2")
+        btn_add.place(x=10, y=400, width=100, height=40)
+        btn_update = Button(hsn_Frame, text="Update", command=self.update, font=("goudy old style", 15, "bold"), bg="#4caf50", fg="white", cursor="hand2")
+        btn_update.place(x=120, y=400, width=100, height=40)
+        btn_delete = Button(hsn_Frame, text="Delete", command=self.delete, font=("goudy old style", 15, "bold"), bg="#f44336", fg="white", cursor="hand2")
+        btn_delete.place(x=230, y=400, width=100, height=40)
+        btn_clear = Button(hsn_Frame, text="Clear", command=self.clear, font=("goudy old style", 15, "bold"), bg="#607d8b", fg="white", cursor="hand2")
+        btn_clear.place(x=340, y=400, width=100, height=40)
+
+        #===searchFrame===
+        SearchFrame = LabelFrame(self.root, text="Search Goods", font=("goudy old style", 12, "bold"), bd=2, relief=RIDGE, bg="white")
+        SearchFrame.place(x=600, y=10, width=650, height=80)
+
+        #===options==
+        cmb_search = ttk.Combobox(SearchFrame, textvariable=self.var_searchby, values=("Select", "ID", "HSN Code"), state='readonly', justify=CENTER, font=("goudy old style", 15))
+        cmb_search.place(x=10, y=10, width=180)
+        cmb_search.current(0)
+
+        txt_search = Entry(SearchFrame, textvariable=self.var_searchtxt, font=("goudy old style", 15), bg="lightyellow")
+        txt_search.place(x=220, y=10)
+        btn_search = Button(SearchFrame, text="Search", font=("goudy old style", 15, "bold"), bg="green", fg="white", cursor="hand2", command=self.search)
+        btn_search.place(x=440, y=9, width=150, height=30)
+
+        #==== hsn Details===========
+        
+        p_frame = Frame(self.root, bd=3, relief=RIDGE)
+        p_frame.place(x=600, y=100, relwidth=0.5, height=450)
+
+        scrollx = Scrollbar(p_frame, orient=HORIZONTAL)
+        scrolly = Scrollbar(p_frame, orient=VERTICAL)
+
+        self.hsnTable = ttk.Treeview(p_frame, columns=("id", "hsn_code", "cgst", "sgst", "igst"),yscrollcommand=scrolly.set,xscrollcommand=scrollx.set)
+        scrollx.pack(side=BOTTOM, fill=X)
+        scrolly.pack(side=RIGHT, fill=Y)
+        
+        scrollx.config(command=self.hsnTable.xview)
+        scrolly.config(command=self.hsnTable.yview)
+
+       
+        self.hsnTable.heading("id", text="ID")
+        self.hsnTable.heading("hsn_code", text="HSN Code")
+        self.hsnTable.heading("cgst", text="CGST")
+        self.hsnTable.heading("sgst", text="SGST")
+        self.hsnTable.heading("igst", text="IGST")
+
+        self.hsnTable["show"] = "headings"
+
+        self.hsnTable.column("id", width=30)
+        self.hsnTable.column("hsn_code", width=30)
+        self.hsnTable.column("cgst", width=10)
+        self.hsnTable.column("sgst", width=10)
+        self.hsnTable.column("igst", width=10)
+       
+
+        self.hsnTable.pack(side=LEFT, fill=BOTH, expand=1)
+        self.hsnTable.bind("<ButtonRelease-1>", self.get_data)
+
+        self.show()
+
+  #========================================================================     
+
+    def add(self):
+        con = mysql.connector.connect(host='localhost', user='root', password='Abhi6379@', database='ims')
+        cur = con.cursor()
+        try:
+            if self.var_id.get() == "Select" or self.var_hsn_code.get() == "Select": 
+                messagebox.showerror("Error", "All fields are required", parent=self.root)
+            else:
+                cur.execute("SELECT * FROM hsn WHERE id=%s", (self.var_id.get(),))
+                row = cur.fetchone()
+                if row is not None:
+                    messagebox.showerror("Error", "ID or HSN Code already exists, try different", parent=self.root)
+                else:
+                    cur.execute("INSERT INTO hsn(id, hsn_code, cgst, sgst, igst) VALUES(%s, %s, %s, %s, %s)", (
+                        self.var_id.get(),
+                        self.var_hsn_code.get(),
+                        self.var_cgst.get(),
+                        self.var_sgst.get(),
+                        self.var_igst.get(),
+                       
+                    ))
+                    con.commit()
+                    messagebox.showinfo("Success", "Goods Added Successfully", parent=self.root)
+                    self.show()  # Refresh the hsn table after adding the hsn
+        except Exception as ex:
+            messagebox.showerror("ERROR", f"Error due to: {str(ex)}", parent=self.root)
+
+    def show(self):
+        con = mysql.connector.connect(host='localhost', user='root', password='Abhi6379@', database='ims')
+        cur = con.cursor()
+        try:
+            cur.execute("SELECT id, hsn_code, cgst, sgst, igst FROM hsn")
+            rows = cur.fetchall()
+            self.hsnTable.delete(*self.hsnTable.get_children())
+            for row in rows:
+                self.hsnTable.insert('', END, values=row)
+        except Exception as ex:
+            messagebox.showerror("ERROR", f"Error due to: {str(ex)}", parent=self.root)
+
+    def get_data(self, ev):
+        try:
+            selected_row = self.hsnTable.focus()
+            if selected_row:
+                content = self.hsnTable.item(selected_row)
+                row = content['values']
+                if row:
+                    
+                    self.var_id.set(row[0])
+                    self.var_hsn_code.set(row[1])
+                    self.var_cgst.set(row[2])
+                    self.var_sgst.set(row[3])
+                    self.var_igst.set(row[4])
+                   
+        except Exception as ex:
+            messagebox.showerror("ERROR", f"Error while getting data: {str(ex)}", parent=self.root)
+
+    def update(self):
+        con = mysql.connector.connect(host='localhost', user='root', password='Abhi6379@', database='ims')
+        cur = con.cursor()
+        try:
+            if self.var_id.get() == "":
+                messagebox.showerror("Error", "Please select HSN Code", parent=self.root)
+            else:
+                cur.execute("SELECT * FROM hsn WHERE id=%s", (self.var_id.get(),))
+                row = cur.fetchone()
+                if row is None:
+                    messagebox.showerror("Error", "Invalid HSN Code", parent=self.root)
+                else:
+                    cur.execute("UPDATE hsn SET hsn_code=%s, cgst=%s, sgst=%s, igst=%s WHERE id=%s", (
+                        
+                        self.var_hsn_code.get(),
+                        self.var_cgst.get(),
+                        self.var_sgst.get(),
+                        self.var_igst.get(),
+                        self.var_id.get(),
+                        
+                    ))
+                    con.commit()
+                    messagebox.showinfo("Success", "Updated Successfully", parent=self.root)
+                    self.show()
+        except Exception as ex:
+            messagebox.showerror("ERROR", f"Error due to: {str(ex)}", parent=self.root)
+           
+    def delete(self):
+        con = mysql.connector.connect(host='localhost', user='root', password='Abhi6379@', database='ims')
+        cur = con.cursor()
+        try:
+            if self.var_id.get() == "":
+                messagebox.showerror("Error", "Please select ID from the list", parent=self.root)
+            else:
+                cur.execute("SELECT * FROM HSN Code WHERE id=%s", (self.var_pid.get(),))
+                row = cur.fetchone()
+                if row is None:
+                    messagebox.showerror("Error", "Invalid HSN Code", parent=self.root)
+                else:
+                    confirm = messagebox.askyesno("Confirm Delete", "Are you sure you want to delete?", parent=self.root)
+                    if confirm:
+                        cur.execute("DELETE FROM hsn WHERE id=%s", (self.var_pid.get(),))
+                        con.commit()
+                        messagebox.showinfo("Success", "Deleted Successfully", parent=self.root)
+                        self.show()
+                        self.clear()
+        except Exception as ex:
+            messagebox.showerror("ERROR", f"Error due to: {str(ex)}", parent=self.root)
+            
+            
+    def clear(self):
+       
+        self.var_id.set("")
+        self.var_hsn_code.set("")
+        self.var_cgst.set("")
+        self.var_sgst.set("")
+        self.var_igst.set("")
+        
+        
+    def search(self):    
+        con = mysql.connector.connect(host='localhost', user='root', password='Abhi6379@', database='ims')
+        cur = con.cursor()
+        try:
+            if self.var_searchby.get() == "Select" or self.var_searchtxt.get() == "":
+                messagebox.showerror("Error", "Please select search criteria and enter search text", parent=self.root)
+            else:
+                query = ""
+                search_text = "%" + self.var_searchtxt.get() + "%"
+                if self.var_searchby.get() == "ID":
+                    query = "SELECT * FROM hsn WHERE id LIKE %s"
+                    cur.execute(query, (search_text,))
+                elif self.var_searchby.get() == "HSN Code":
+                    query = "SELECT * FROM hsn WHERE hsn_code LIKE %s"
+                    cur.execute(query, (search_text,))
+               
+
+                rows = cur.fetchall()
+                self.hsnTable.delete(*self.hsnTable.get_children())
+                for row in rows:
+                    self.hsnTable.insert("", END, values=row)
+
+        except Exception as ex:
+            messagebox.showerror("ERROR", f"Error due to: {str(ex)}", parent=self.root)
+
+            
+if __name__ == "__main__":
+    root = Tk()
+    obj = hsnClass(root)
+    root.mainloop()

@@ -1,0 +1,274 @@
+from tkinter import *
+from tkinter import ttk, messagebox
+import mysql.connector
+from tkcalendar import DateEntry
+import import_ipynb
+from item import itemClass
+
+class purchaseClass:
+    def __init__(self, root):
+        self.root = root
+        self.root.geometry("1330x650+200+130")
+        self.root.title("INVENTORY MANAGEMENT SYSTEM")
+        self.root.config(bg="white")
+        self.root.focus_force()
+        # =================================================
+        # All variables
+        self.var_searchby = StringVar()
+        self.var_searchtxt = StringVar()
+       
+        self.var_bill_no = StringVar()
+        self.var_date = StringVar()
+        self.var_supplier = StringVar()
+        
+        self.supplier_list = []
+        
+        #===searchFrame===
+        SearchFrame=LabelFrame(self.root,text="Search Purchased Items",font=("goudy old style",12,"bold"),bd=2,relief=RIDGE,bg="white")
+        SearchFrame.place(x=350,y=20,width=650,height=70)
+        
+        #===options==
+        cmb_search=ttk.Combobox(SearchFrame,textvariable=self.var_searchby,values=("Select","Bill No","Date","Supplier"),state='readonly',justify=CENTER,font=("goudy old style",15))
+        cmb_search.place(x=15,y=10,width=180)
+        cmb_search.current(0)
+        
+        txt_search=Entry(SearchFrame,textvariable=self.var_searchtxt,font=("goudy old style",15),bg="lightyellow").place(x=230,y=10)
+        btn_search=Button(SearchFrame,text="Search",command=self.search,font=("goudy old style",15,"bold"),bg="green",fg="white",cursor="hand2").place(x=460,y=9,width=150,height=30)
+        
+        
+        
+        #===title===
+        title=Label(self.root,text="Manage Purchase Details",font=("goudy old style",15),bg="#0f4d7d",fg="white").place(x=50,y=100,width=1230)
+        
+        #===PurchaseFrame===
+        PurchaseFrame=LabelFrame(self.root,bd=2,relief=RIDGE,bg="white")
+        PurchaseFrame.place(x=130,y=140,width=1050,height=150)
+        
+        btn_item=Button(self.root,text="Item Details",command=self.item,font=("goudy old style",15,"bold"),bg="grey",fg="white",cursor="hand2").place(x=930,y=150,width=150,height=30)
+       
+        # ===content===
+        lbl_bill_no = Label(self.root, text="Bill No", font=("goudy old style", 15), bg="white").place(x=150, y=150)
+        lbl_date = Label(self.root, text="Date", font=("goudy old style", 15), bg="white").place(x=150, y=200)
+        lbl_supplier = Label(self.root, text="Supplier", font=("goudy old style", 15), bg="white").place(x=150, y=250)
+
+        txt_bill_no = Entry(self.root, textvariable=self.var_bill_no, font=("goudy old style", 15),bg="lightyellow").place(x=250, y=150, width=210)
+        txt_date = DateEntry(self.root, textvariable=self.var_date, font=("goudy old style", 15),bg="lightyellow", date_pattern="dd-mm-yyyy").place(x=250, y=200, width=210)
+
+        self.fetch_supplier()  # Populate supplier lists
+        cmb_supplier = ttk.Combobox(self.root,textvariable=self.var_supplier, values=self.supplier_list, state='readonly', justify=CENTER, font=("goudy old style", 15))
+        cmb_supplier.place(x=250, y=250, width=210)
+        #cmb_supplier.current(0)
+        
+        #===buttons===
+        btn_add=Button(self.root,text="Add",command=self.add,font=("goudy old style",15,"bold"),bg="#2196f3",fg="white",cursor="hand2").place(x=600,y=250,width=110,height=28)
+        btn_update=Button(self.root,text="Update",command=self.update,font=("goudy old style",15,"bold"),bg="#4caf50",fg="white",cursor="hand2").place(x=730,y=250,width=110,height=28)
+        btn_delete=Button(self.root,text="Delete",command=self.delete,font=("goudy old style",15,"bold"),bg="#f44336",fg="white",cursor="hand2").place(x=860,y=250,width=110,height=28)
+        btn_clear=Button(self.root,text="Clear",command=self.clear,font=("goudy old style",15,"bold"),bg="#607d8b",fg="white",cursor="hand2").place(x=990,y=250,width=110,height=28)
+        
+
+        #===purchase Details===
+        emp_frame=Frame(self.root,bd=3,relief=RIDGE)
+        emp_frame.place(x=80, y=320,relwidth=0.9, height=270)
+        
+        scrolly=Scrollbar(emp_frame,orient=VERTICAL)
+        scrollx=Scrollbar(emp_frame,orient=HORIZONTAL)
+        
+        self.purchaseTable=ttk.Treeview(emp_frame,columns=("bill_no","date","supplier"),yscrollcommand=scrolly.set,xscrollcommand=scrollx.set)
+        scrollx.pack(side=BOTTOM,fill=X)
+        scrolly.pack(side=RIGHT,fill=Y)
+        scrollx.config(command=self.purchaseTable.xview)
+        scrolly.config(command=self.purchaseTable.yview)
+        
+        self.purchaseTable.heading("bill_no",text="Bill No")
+        self.purchaseTable.heading("date",text="Date")
+        self.purchaseTable.heading("supplier",text="Supplier")
+
+        
+        self.purchaseTable["show"]="headings"
+        
+        self.purchaseTable.column("bill_no",width=90)
+        self.purchaseTable.column("date",width=100)
+        self.purchaseTable.column("supplier",width=100)
+              
+        self.purchaseTable.pack(fill=BOTH,expand=1)
+        self.purchaseTable.bind("<ButtonRelease-1>",self.get_data)
+        
+        self.show()
+#==========================================================================================================        
+    def fetch_supplier(self):
+        
+        con = mysql.connector.connect(host='localhost', user='root', password='Abhi6379@', database='ims')
+        cur = con.cursor()
+        try:
+
+            cur.execute("SELECT name FROM supplier")
+            sups = cur.fetchall()
+            if len(sups) > 0:
+                self.supplier_list.clear()
+                self.supplier_list.append("Select")
+                for supplier in sups:
+                    self.supplier_list.append(supplier[0])
+                    
+                    
+        except Exception as ex:
+            messagebox.showerror("ERROR", f"Error due to: {str(ex)}", parent=self.root)
+            
+    
+    def add(self):
+        con=mysql.connector.connect(host='localhost',user='root',password='Abhi6379@', database='ims')
+        cur=con.cursor() 
+        try:
+            if self.var_bill_no.get()=="":
+                messagebox.showerror("Error","Bill No must be required",parent=self.root)
+            else:
+                cur.execute("Select*from purchase where bill_no=%s",(self.var_bill_no.get(),))
+                row=cur.fetchone()
+                if row!=None:
+                    messagebox.showerror("Error","This Bill No already assigned,try different",parent=self.root)
+                else:
+                   
+                    cur.execute("Insert into purchase(bill_no,date,supplier)values(%s,%s,%s)",(
+                                        self.var_bill_no.get(),
+                                        self.var_date.get(),
+                                        self.var_supplier.get(),
+                                           
+                                        
+                    ))
+                    con.commit()
+                    messagebox.showinfo("Success","purchase Added Successfully",parent=self.root)
+        except Exception as ex:
+            messagebox.showerror("ERROR",f"Error due to :{str(ex)}",parent=self.root)
+        self.show()
+            
+ #============================================================================================================           
+    def item(self):
+        self.new_win=Toplevel(self.root)
+        self.new_obj=itemClass(self.new_win)
+        
+    def show(self):
+        con=mysql.connector.connect(host='localhost',user='root',password='Abhi6379@', database='ims')
+        cur=con.cursor() 
+        try:
+            cur.execute("Select*from purchase")
+            rows=cur.fetchall()
+            self.purchaseTable.delete(*self.purchaseTable.get_children())
+            for row in rows:
+                self.purchaseTable.insert('',END,values=row)
+            
+        except Exception as ex:
+            messagebox.showerror("ERROR",f"Error due to :{str(ex)}",parent=self.root)
+            
+    def get_data(self,ev):
+        f=self.purchaseTable.focus()
+        content=(self.purchaseTable.item(f))
+        row=content['values']
+        #print(row)
+        self.var_bill_no.set(row[0])
+        self.var_date.set(row[1])
+        self.var_supplier.set(row[2])
+        
+        
+    def update(self):
+        con=mysql.connector.connect(host='localhost',user='root',password='Abhi6379@', database='ims')
+        cur=con.cursor() 
+        try:
+            if self.var_bill_no.get()=="":
+                messagebox.showerror("Error","Bill No must be required",parent=self.root)
+            else:
+                cur.execute("Select*from purchase where bill_no=%s",(self.var_bill_no.get(),))
+                row=cur.fetchone()
+                if row==None:
+                    messagebox.showerror("Error","Invalid Bill No",parent=self.root)
+                else:
+                   
+                    cur.execute("Update purchase set date=%s,supplier=%s where bill_no=%s",(
+                                        
+                                        self.var_date.get(),
+                                        self.var_supplier.get(), 
+                                        self.var_bill_no.get(),
+                                        
+                    ))
+                    con.commit()
+                    messagebox.showinfo("Success","purchase Updated Successfully",parent=self.root)
+        except Exception as ex:
+            messagebox.showerror("ERROR",f"Error due to :{str(ex)}",parent=self.root)
+            self.show()
+            
+    def delete(self):   
+            con=mysql.connector.connect(host='localhost',user='root',password='Abhi6379@', database='ims')
+            cur=con.cursor() 
+            try:          
+                if self.var_bill_no.get()=="":
+                    messagebox.showerror("Error","purchase ID must be required",parent=self.root)
+                else:       
+                    cur.execute("Select*from purchase where bill_no=%s",(self.var_bill_no.get(),))
+                    row=cur.fetchone()
+                if row==None:
+                    messagebox.showerror("Error","Invalid purchase ID",parent=self.root)
+                else:
+                    op=messagebox.askyesno("Confirm","Do you really want to delete",parent=self.root)
+                    if op==True:
+                        
+                        cur.execute("delete from purchase where bill_no=%s",(self.var_bill_no.get(),))
+                        con.commit()
+                        messagebox.showinfo("Delete","purchase Deleted Successfully",parent=self.root)
+                        self.clear()
+                        
+                        
+            except Exception as ex:     
+                messagebox.showerror("ERROR",f"Error due to :{str(ex)}",parent=self.root)
+                
+    
+    def clear(self):
+        self.var_bill_no.set("")
+        self.var_date.set("")
+        self.var_supplier.set("")
+       
+        self.show()
+        
+        
+    def open_calendar():
+        cal = Calendar(self.root, selectmode="day",day=14, month=7, year=2023)
+        date = cal.show()
+        if date:
+            obj.var_date.set(date.strftime("%d-%m-%y"))
+            
+    def search(self):    
+        con = mysql.connector.connect(host='localhost', user='root', password='Abhi6379@', database='ims')
+        cur = con.cursor()
+        try:
+            if self.var_searchby.get() == "Select" :
+                messagebox.showerror("Error", "Please select search criteria and enter search text", parent=self.root)
+            else:
+                query = ""
+                search_text = "%" + self.var_searchtxt.get() + "%"
+                
+                if self.var_searchby.get() == "Bill No":
+                    query = "SELECT * FROM purchase WHERE bill_no LIKE %s"
+                    cur.execute(query, (search_text,))
+                elif self.var_searchby.get() == "Date":
+                    query = "SELECT * FROM purchase WHERE date LIKE %s"
+                    cur.execute(query, (search_text,))
+                elif self.var_searchby.get() == "Supplier":
+                    query = "SELECT * FROM purchase WHERE supplier LIKE %s"
+                    cur.execute(query, (search_text,))
+               
+
+                rows = cur.fetchall()
+                self.purchaseTable.delete(*self.purchaseTable.get_children())
+                for row in rows:
+                    self.purchaseTable.insert("", END, values=row)
+
+        except Exception as ex:
+            messagebox.showerror("ERROR", f"Error due to: {str(ex)}", parent=self.root)
+            
+        
+    
+         
+        
+ #=========================================================================================================================       
+        
+if __name__=="__main__":     
+    root=Tk()
+    obj=purchaseClass(root)
+    root.mainloop()

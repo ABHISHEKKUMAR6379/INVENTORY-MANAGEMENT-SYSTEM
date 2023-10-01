@@ -1,0 +1,219 @@
+from tkinter import*
+from PIL import Image,ImageTk #pip install pillow
+import import_ipynb
+from employee import employeeClass
+from suppliers import supplierClass
+from hsn import hsnClass
+from product import ProductClass
+#from sales import salesClass
+from purchase import purchaseClass
+from item import itemClass
+from sales_details import sales_detail_class
+import datetime
+import mysql.connector
+
+
+class IMS:
+    def __init__(self,root):
+        self.root=root
+        self.root.geometry("1527x785+0+0")
+        self.root.title("INVENTORY MANAGEMENT SYSTEM") 
+        self.root.config(bg="white")
+        
+        # Background Image
+        bg_image = Image.open("D:\python_images\inventory.jpg")
+        bg_image = bg_image.resize((1527, 785), Image.LANCZOS)
+        self.background = ImageTk.PhotoImage(bg_image)
+        self.background_label = Label(self.root, image=self.background)
+        self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
+        
+        
+        #---title---
+        self.icon_title=PhotoImage(file="D:\python_images\logo1.png")
+        title=Label(self.root,text="Inventory Management System",image=self.icon_title,compound=LEFT,font=("times new roman",40,"bold"),bg="#010c48",fg="white",anchor="w",padx=20).place(x=0,y=0,relwidth=1,height=70)
+        
+        #---btn_logout---
+        btn_logout=Button(self.root,text="Logout",font=("times new roman",15,"bold"),bg="yellow",cursor="hand2").place(x=1350,y=10,height=50,width=150)
+       
+        #---clock---
+        self.lbl_clock=Label(font=("times new roman",15),bg="#4d636d",fg="white")
+        self.lbl_clock.place(x=0,y=70,relwidth=1,height=30)
+        self.update_clock()
+        
+        
+        #---Left Menu---
+        LeftMenu=Frame(self.root,bd=2,relief=RIDGE,bg="white")
+        LeftMenu.place(x=0,y=70,width=200,height=290)
+        
+    
+
+        self.icon_side=PhotoImage(file="D:\python_images\side.png")
+        lbl_menu=Label(LeftMenu,text="Menu",font=("times new roman",20),bg="#009688").pack(side=TOP,fill=X)  
+        btn_employee=Button(LeftMenu,text="Employee",command=self.employee,image=self.icon_side,compound=LEFT,padx=5,anchor="w",font=("times new roman",16,"bold"),bg="white",bd=3,cursor="hand2").pack(side=TOP,fill=X)
+        btn_supplier=Button(LeftMenu,text="Supplier",command=self.supplier,image=self.icon_side,compound=LEFT,padx=5,anchor="w",font=("times new roman",16,"bold"),bg="white",bd=3,cursor="hand2").pack(side=TOP,fill=X)
+        btn_hsn=Button(LeftMenu,text="HSN",command=self.hsn,image=self.icon_side,compound=LEFT,padx=5,anchor="w",font=("times new roman",16,"bold"),bg="white",bd=3,cursor="hand2").pack(side=TOP,fill=X)
+        btn_product=Button(LeftMenu,text="Product",command=self.product,image=self.icon_side,compound=LEFT,padx=5,anchor="w",font=("times new roman",16,"bold"),bg="white",bd=3,cursor="hand2").pack(side=TOP,fill=X) 
+        btn_purchase=Button(LeftMenu,text="Purchase",command=self.purchase,image=self.icon_side,compound=LEFT,padx=5,anchor="w",font=("times new roman",16,"bold"),bg="white",bd=3,cursor="hand2").pack(side=TOP,fill=X)
+        btn_sales=Button(LeftMenu,text="Sales",command=self.sales_detail,image=self.icon_side,compound=LEFT,padx=5,anchor="w",font=("times new roman",16,"bold"),bg="white",bd=3,cursor="hand2").pack(side=TOP,fill=X)
+        
+        #---content---
+        self.lbl_employee=Label(self.root,text=f"Total Employee\n[{self.get_total_employee()}]",bd=5,relief=RIDGE,bg="#33bbf9",fg="white",font=("goudy old style",20,"bold"))
+        self.lbl_employee.place(x=300,y=130,height=120,width=250)
+        
+        self.lbl_supplier=Label(self.root,text=f"Total Supplier\n[{self.get_total_supplier()}]",bd=5,relief=RIDGE,bg="#ff5722",fg="white",font=("goudy old style",20,"bold"))
+        self.lbl_supplier.place(x=700,y=130,height=120,width=250)
+
+        self.lbl_product=Label(self.root,text=f"Total Product\n[{self.get_total_product()}]",bd=5,relief=RIDGE,bg="#607d8b",fg="white",font=("goudy old style",20,"bold"))
+        self.lbl_product.place(x=1100,y=130,height=120,width=250)
+  
+        self.lbl_purchase=Label(self.root,text=f"Total Purchase\n[{self.get_total_purchase()}]",bd=5,relief=RIDGE,bg="#ffc107",fg="white",font=("goudy old style",20,"bold"))
+        self.lbl_purchase.place(x=300,y=320,height=120,width=250)
+        
+        self.lbl_sales=Label(self.root,text=f"Total Sales\n[{self.get_total_sales()}]",bd=5,relief=RIDGE,bg="green",fg="white",font=("goudy old style",20,"bold"))
+        self.lbl_sales.place(x=1100,y=320,height=120,width=250)
+        
+        #---footer---
+        lbl_footer=Label(self.root,text="IMS-Inventory Management System | Developed by Abhishek\n",font=("times new roman",12),bg="#4d636d",fg="white")
+        lbl_footer.pack(side=BOTTOM,fill=X)
+        
+#====================================================================================================================================================================================        
+    def update_clock(self):
+        now = datetime.datetime.now()
+        current_date_time = now.strftime("%d-%m-%Y %H:%M:%S")
+        self.lbl_clock.config(text=f"\t\t Welcome to Inventory Management System \t\t\t\t Date: {current_date_time}")
+        self.lbl_clock.place(x=200, y=70, relwidth=1, height=30)  # Place clock label a little away from the left side
+        self.root.after(1000, self.update_clock)  # Update clock every second
+    
+   
+    def employee(self):
+        self.new_win=Toplevel(self.root)
+        self.new_obj=employeeClass(self.new_win)
+     
+    def supplier(self):
+        self.new_win=Toplevel(self.root)
+        self.new_obj=supplierClass(self.new_win)
+        
+    def hsn(self):
+        self.new_win=Toplevel(self.root)
+        self.new_obj=hsnClass(self.new_win)
+        
+    def product(self):
+        self.new_win=Toplevel(self.root)
+        self.new_obj=ProductClass(self.new_win)
+        
+    def purchase(self):
+        self.new_win=Toplevel(self.root)
+        self.new_obj=purchaseClass(self.new_win)    
+        
+    def sales_detail(self):
+        self.new_win=Toplevel(self.root)
+        self.new_obj=sales_detail_class(self.new_win)
+        
+   
+            
+        
+        
+        
+ #==================================================================
+    
+    def get_total_employee(self): 
+        try:
+            con=mysql.connector.connect(host='localhost',user='root',password='Abhi6379@', database='ims')
+            cur=con.cursor()
+            cur.execute("SELECT COUNT(*) FROM employee")
+            # Fetch the result
+            result = cur.fetchone()
+            # Close the cursor and database connection
+            cur.close()
+            con.close()
+            # Extract the count value from the result tuple
+            total_employee = result[0]
+            return total_employee
+
+        except mysql.connector.Error as error:
+            print("Error while connecting to MySQL:", error)
+            return 0
+    
+    def get_total_supplier(self): 
+        try:
+            con=mysql.connector.connect(host='localhost',user='root',password='Abhi6379@', database='ims')
+            cur=con.cursor()
+            cur.execute("SELECT COUNT(*) FROM supplier")
+            # Fetch the result
+            result = cur.fetchone()
+            # Close the cursor and database connection
+            cur.close()
+            con.close()
+            # Extract the count value from the result tuple
+            total_supplier = result[0]
+            return total_supplier
+
+        except mysql.connector.Error as error:
+            print("Error while connecting to MySQL:", error)
+            return 0
+       
+
+    def get_total_product(self):
+        try:
+            con=mysql.connector.connect(host='localhost',user='root',password='Abhi6379@', database='ims')
+            cur=con.cursor()
+            cur.execute("SELECT COUNT(*) FROM product")
+            # Fetch the result
+            result = cur.fetchone()
+            # Close the cursor and database connection
+            cur.close()
+            con.close()
+            # Extract the count value from the result tuple
+            total_product = result[0]
+            return total_product
+
+        except mysql.connector.Error as error:
+            print("Error while connecting to MySQL:", error)
+            return 0
+       
+        
+
+    def get_total_purchase(self):
+        try:
+            con=mysql.connector.connect(host='localhost',user='root',password='Abhi6379@', database='ims')
+            cur=con.cursor()
+            cur.execute("SELECT COUNT(*) FROM purchase")
+            # Fetch the result
+            result = cur.fetchone()
+            # Close the cursor and database connection
+            cur.close()
+            con.close()
+            # Extract the count value from the result tuple
+            total_purchase = result[0]
+            return total_purchase
+
+        except mysql.connector.Error as error:
+            print("Error while connecting to MySQL:", error)
+            return 0
+       
+        
+
+    def get_total_sales(self):
+        try:
+            con=mysql.connector.connect(host='localhost',user='root',password='Abhi6379@', database='ims')
+            cur=con.cursor()
+            cur.execute("SELECT COUNT(*) FROM sales_detail")
+            # Fetch the result
+            result = cur.fetchone()
+            # Close the cursor and database connection
+            cur.close()
+            con.close()
+            # Extract the count value from the result tuple
+            total_sales = result[0]
+            return total_sales
+
+        except mysql.connector.Error as error:
+            print("Error while connecting to MySQL:", error)
+            return 0     
+        
+                       
+        
+if __name__=="__main__":
+    root=Tk()
+    obj=IMS(root)
+    root.mainloop()
